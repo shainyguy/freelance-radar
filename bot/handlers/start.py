@@ -79,7 +79,6 @@ async def cmd_help(message: Message, user: User):
         "📖 **Freelance Radar**\n\n"
         "**Кнопки:**\n"
         "🔍 Заказы — подходящие заказы\n"
-        "⚙️ Фильтры — профили фильтров\n"
         "🤖 AI — отклик, скоринг, скам, цена\n"
         "📊 Аналитика — статистика рынка\n"
         "⭐ Избранное — сохранённые\n"
@@ -124,7 +123,7 @@ async def btn_orders(message: Message, user: User, session):
         if not has_profile:
             await message.answer(
                 "📭 Заполните **профиль** (👤 Профиль), чтобы получать подходящие заказы!\n"
-                "Или создайте фильтр (⚙️ Фильтры).",
+                "Заполните профиль → 👤 Профиль.",
                 parse_mode="Markdown",
             )
         else:

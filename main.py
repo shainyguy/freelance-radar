@@ -213,7 +213,6 @@ async def main():
     await bot.set_my_commands([
         BotCommand(command="start", description="Главное меню"),
         BotCommand(command="help", description="Помощь"),
-        BotCommand(command="filters", description="Фильтры"),
         BotCommand(command="admin", description="Админка"),
     ])
 

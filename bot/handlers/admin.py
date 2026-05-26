@@ -609,7 +609,7 @@ async def adm_ai_proc(msg: Message, state: FSMContext, user: User):
     await msg.answer("⏳...")
     try:
         from core.gigachat_client import ai_test
-        resp = ai_test(msg.text)
+        resp = await ai_test(msg.text)
         await msg.answer(f"🤖 **GigaChat:**\n\n{resp}", parse_mode="Markdown")
     except Exception as e:
         await msg.answer(f"❌ {e}")

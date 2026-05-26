@@ -1,9 +1,8 @@
 """
-GigaChat AI — через Client ID + Authorization Key (OAuth client_credentials).
+GigaChat AI — через Authorization Key (OAuth client_credentials).
 
-В .env:
-  GIGACHAT_CLIENT_ID=ваш_client_id
-  GIGACHAT_AUTH_KEY=ваш_authorization_key
+В Railway Variables:
+  GIGACHAT_AUTH_KEY=MDE5YmUx...base64...
   GIGACHAT_SCOPE=GIGACHAT_API_PERS
 """
 from __future__ import annotations
@@ -21,13 +20,18 @@ _access_token: Optional[str] = None
 
 
 async def _get_token() -> str:
-    """Получить OAuth токен через Client ID + Auth Key."""
     global _access_token
     if _access_token:
         return _access_token
 
-    if not settings.GIGACHAT_AUTH_KEY:
-        raise RuntimeError("GIGACHAT_AUTH_KEY не задан в .env")
+    auth_key = settings.GIGACHAT_AUTH_KEY
+    if not auth_key:
+        raise RuntimeError(
+            "GIGACHAT_AUTH_KEY не задан! Добавьте в Railway Variables:\n"
+            "GIGACHAT_AUTH_KEY = ваш_base64_ключ"
+        )
+
+    logger.info("GigaChat: получаю OAuth токен...")
 
     async with httpx.AsyncClient(verify=False, timeout=15) as client:
         resp = await client.post(
@@ -36,17 +40,23 @@ async def _get_token() -> str:
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json",
                 "RqUID": str(uuid.uuid4()),
-                "Authorization": f"Basic {settings.GIGACHAT_AUTH_KEY}",
+                "Authorization": f"Basic {auth_key}",
             },
             data={"scope": settings.GIGACHAT_SCOPE},
         )
-        resp.raise_for_status()
-        _access_token = resp.json()["access_token"]
+
+        if resp.status_code != 200:
+            error_text = resp.text[:500]
+            logger.error(f"GigaChat OAuth FAILED: {resp.status_code} — {error_text}")
+            raise RuntimeError(f"GigaChat OAuth ошибка {resp.status_code}: {error_text}")
+
+        data = resp.json()
+        _access_token = data["access_token"]
+        logger.info("GigaChat: токен получен ✅")
         return _access_token
 
 
 async def _chat(system: str, user_msg: str, temperature: float = 0.7) -> str:
-    """Отправить запрос в GigaChat."""
     global _access_token
 
     for attempt in range(2):
@@ -70,18 +80,31 @@ async def _chat(system: str, user_msg: str, temperature: float = 0.7) -> str:
                         "max_tokens": 1500,
                     },
                 )
+
                 if resp.status_code == 401:
-                    _access_token = None  # сброс токена, повтор
+                    logger.warning("GigaChat: токен истёк, обновляю...")
+                    _access_token = None
                     continue
-                resp.raise_for_status()
+
+                if resp.status_code != 200:
+                    error_text = resp.text[:500]
+                    logger.error(f"GigaChat API error: {resp.status_code} — {error_text}")
+                    raise RuntimeError(f"GigaChat {resp.status_code}: {error_text}")
+
                 return resp.json()["choices"][0]["message"]["content"]
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401 and attempt == 0:
                 _access_token = None
                 continue
             raise
+        except RuntimeError:
+            raise
+        except Exception as e:
+            logger.error(f"GigaChat unexpected error: {e}")
+            raise RuntimeError(f"GigaChat ошибка: {e}")
 
-    return "(Ошибка авторизации GigaChat)"
+    raise RuntimeError("GigaChat: не удалось авторизоваться после 2 попыток")
 
 
 # ── Публичные функции ─────────────────────────────
