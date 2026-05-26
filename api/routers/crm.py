@@ -103,7 +103,7 @@ async def crm_earnings(
 ):
     """Заработок по периодам."""
     user = await _get_user(tg_id, session)
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = datetime.utcnow() - timedelta(days=days)
 
     # Общий заработок
     total = user.earnings_total or 0

@@ -1,5 +1,6 @@
 """
-Freelance.ru — парсим 3 страницы https://freelance.ru/project/search/page/N
+Freelance.ru — парсим 3 страницы.
+URL: https://freelance.ru/project/search?page=N
 """
 from __future__ import annotations
 import logging, re
@@ -19,7 +20,7 @@ class FreelanceRuParser(BaseParser):
         seen_ids = set()
 
         for page in range(1, self.pages_to_parse + 1):
-            url = f"https://freelance.ru/project/search/page/{page}"
+            url = f"https://freelance.ru/project/search?page={page}"
             html = await self._get(url)
             if not html:
                 break
@@ -56,10 +57,8 @@ class FreelanceRuParser(BaseParser):
             m = re.search(r"-(\d+)\.html", href)
             ext_id = m.group(1) if m else href
 
-            # Описание из title атрибута или следующего блока
             text = link.get("title", "") or ""
 
-            # Ищем контейнер
             parent = link.parent
             if parent:
                 parent = parent.parent or parent
@@ -69,12 +68,15 @@ class FreelanceRuParser(BaseParser):
 
             if parent:
                 full = parent.get_text(separator="\n", strip=True)
-                # Бюджет
+                # Бюджет: "1 500 Руб" или "30 000 Руб"
                 pm = re.search(r"([\d\s]+)\s*(?:Руб|руб|₽)", full.replace("\xa0", " "))
                 if pm:
-                    val = float(pm.group(1).replace(" ", ""))
-                    if val >= 100:
-                        budget_min = val; budget_max = val
+                    clean = pm.group(1).strip().split("\n")[0].replace(" ", "")
+                    if clean.isdigit():
+                        val = float(clean)
+                        if val >= 10:
+                            budget_min = val
+                            budget_max = val
 
                 # Категория — жирный текст
                 bold = parent.find("b") or parent.find("strong")

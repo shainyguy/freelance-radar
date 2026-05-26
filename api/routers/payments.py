@@ -27,12 +27,12 @@ async def yookassa_webhook(request: Request):
             pay = r.scalar_one_or_none()
             if pay:
                 pay.status = "succeeded"
-                pay.paid_at = datetime.now(timezone.utc)
+                pay.paid_at = datetime.utcnow()
             r = await session.execute(select(User).where(User.tg_id == result["user_tg_id"]))
             user = r.scalar_one_or_none()
             if user:
                 user.tier = result["tier"]
-                now = datetime.now(timezone.utc)
+                now = datetime.utcnow()
                 base = user.subscription_until if user.subscription_until and user.subscription_until > now else now
                 user.subscription_until = base + timedelta(days=result["months"] * 30)
                 lim = settings.get_tier_limits(result["tier"])

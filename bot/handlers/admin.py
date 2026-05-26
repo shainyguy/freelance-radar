@@ -53,7 +53,7 @@ async def admin_entry(msg: Message, user: User):
 @router.callback_query(F.data == "adm:stats")
 async def adm_stats(cb: CallbackQuery, user: User, session):
     if not user.is_admin: return
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     today = now.replace(hour=0,minute=0,second=0,microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
@@ -304,10 +304,10 @@ async def adm_grant_months(cb: CallbackQuery, state: FSMContext, user: User, ses
         await cb.answer("Не найден", show_alert=True); await state.clear(); return
 
     target.tier = tier
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     base = target.subscription_until if target.subscription_until and target.subscription_until > now else now
     if months >= 999:
-        target.subscription_until = datetime(2099,12,31,tzinfo=timezone.utc)
+        target.subscription_until = datetime(2099,12,31)
     else:
         target.subscription_until = base + timedelta(days=months*30)
     lim = settings.get_tier_limits(tier)
@@ -362,7 +362,7 @@ async def adm_mkadmin(cb: CallbackQuery, user: User, session):
     t = r.scalar_one_or_none()
     if not t: await cb.answer("?", show_alert=True); return
     t.is_admin = True; t.tier = "business"
-    t.subscription_until = datetime(2099,12,31,tzinfo=timezone.utc)
+    t.subscription_until = datetime(2099,12,31)
     lim = settings.get_tier_limits("business")
     t.ai_credits_left = lim["ai_credits_per_month"]
     await session.commit()
@@ -414,7 +414,7 @@ async def adm_exdet(cb: CallbackQuery, user: User, session):
     e = r.scalar_one_or_none()
     if not e: await cb.answer("?", show_alert=True); return
     oc = (await session.execute(select(func.count(Order.id)).where(Order.exchange_id == e.id))).scalar() or 0
-    today = datetime.now(timezone.utc).replace(hour=0,minute=0,second=0,microsecond=0)
+    today = datetime.utcnow().replace(hour=0,minute=0,second=0,microsecond=0)
     ot = (await session.execute(select(func.count(Order.id)).where(Order.exchange_id == e.id, Order.parsed_at >= today))).scalar() or 0
     txt = (
         f"🏢 **{e.display_name}**\n\n"

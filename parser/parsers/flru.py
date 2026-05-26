@@ -63,26 +63,40 @@ class FLRuParser(BaseParser):
             text = ""
             for line in lines:
                 if len(line) > 30:
-                    text = line; break
+                    text = line
+                    break
 
             budget_min = budget_max = None
+            # Ищем чистый бюджет: только строки вида "50 000 руб" или "от 70 000 ₽"
             for line in lines:
-                bmin, bmax = extract_budget(line)
+                # Очищаем от лишних символов
+                clean = line.replace("\xa0", " ").strip()
+                # Пропускаем строки с переносами (мусор типа "22\n20000")
+                if "\n" in clean:
+                    continue
+                bmin, bmax = extract_budget(clean)
                 if bmin or bmax:
-                    budget_min, budget_max = bmin, bmax; break
+                    budget_min, budget_max = bmin, bmax
+                    break
 
+            # Fallback: ищем паттерн "число руб/₽" в полном тексте (одной строкой)
             if not budget_min and not budget_max:
-                pm = re.search(r"([\d\s]+)\s*(?:руб|₽)", full_text.replace("\xa0", " "))
+                # Берём только чистые числа перед руб/₽
+                pm = re.search(r"(\d[\d\s]*\d)\s*(?:руб|₽)", full_text.replace("\xa0", " ").replace("\n", " "))
                 if pm:
-                    val = float(pm.group(1).replace(" ", ""))
-                    if val >= 100: budget_min = val; budget_max = val
+                    num_str = pm.group(1).replace(" ", "")
+                    if num_str.isdigit():
+                        val = float(num_str)
+                        if 100 <= val <= 100_000_000:
+                            budget_min = val
+                            budget_max = val
 
             responses = None
             rm = re.search(r"(\d+)\s*(?:ответ|отклик)", full_text.lower())
-            if rm: responses = int(rm.group(1))
+            if rm:
+                responses = int(rm.group(1))
 
             category = None
-            # FL.ru показывает категорию — ищем ссылки /projects/category/
             cat_link = container.find("a", href=re.compile(r"/projects/category/"))
             if cat_link:
                 category = cat_link.get_text(strip=True)

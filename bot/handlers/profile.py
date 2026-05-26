@@ -397,7 +397,7 @@ async def sub_pay(cb: CallbackQuery, user: User, session):
 @router.callback_query(F.data == "radar:digest")
 async def radar_digest(cb: CallbackQuery, user: User, session):
     """Мгновенный дайджест."""
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     week_ago = now - timedelta(days=7)
 
     total = (await session.execute(select(func.count(Order.id)).where(Order.parsed_at >= week_ago))).scalar() or 0
@@ -431,7 +431,7 @@ async def radar_digest(cb: CallbackQuery, user: User, session):
 async def radar_price_map(cb: CallbackQuery, user: User, session):
     """Ценовая карта по категориям пользователя."""
     cats = user.categories_list
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     month_ago = now - timedelta(days=30)
 
     txt = "🏷 **Ценовая карта рынка**\n\n"
@@ -472,7 +472,7 @@ async def radar_price_map(cb: CallbackQuery, user: User, session):
 async def radar_best_time(cb: CallbackQuery, user: User, session):
     """Лучшее время для откликов."""
     from sqlalchemy import extract
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     month_ago = now - timedelta(days=30)
 
     r = await session.execute(

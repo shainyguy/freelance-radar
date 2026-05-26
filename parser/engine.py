@@ -1,7 +1,6 @@
 """
 Движок парсинга — сохранение, запуск, маппинг категорий.
 Активные биржи: Kwork, FL.ru, Freelance.ru
-(Habr Freelance закрылся, Workzilla требует авторизацию)
 """
 from __future__ import annotations
 import logging
@@ -28,6 +27,11 @@ EXCHANGES_INIT = [
     ("fl",         "FL.ru",          "https://www.fl.ru",   "FLRuParser"),
     ("freelanceru","Freelance.ru",   "https://freelance.ru","FreelanceRuParser"),
 ]
+
+
+def _now():
+    """Текущее время без tzinfo — совместимо и с SQLite, и с PostgreSQL."""
+    return datetime.utcnow()
 
 
 async def ensure_exchanges():
@@ -60,6 +64,11 @@ async def save_orders(exchange_name: str, dtos: list[OrderDTO]) -> int:
             full_text = f"{dto.title} {dto.text}".lower()
             is_urgent = any(w in full_text for w in ["срочно", "urgent", "asap", "сегодня"])
 
+            # Убираем tzinfo из posted_at если есть (для совместимости)
+            posted = dto.posted_at
+            if posted and posted.tzinfo is not None:
+                posted = posted.replace(tzinfo=None)
+
             session.add(Order(
                 exchange_id=exchange.id, external_id=dto.external_id,
                 title=dto.title, text=dto.text, url=dto.url,
@@ -70,13 +79,14 @@ async def save_orders(exchange_name: str, dtos: list[OrderDTO]) -> int:
                 client_rating=dto.client_rating,
                 client_reviews_count=dto.client_reviews_count,
                 responses_count=dto.responses_count,
-                posted_at=dto.posted_at, hash=dto.hash,
+                posted_at=posted, hash=dto.hash,
                 is_urgent=is_urgent,
                 deadline=dto.deadline,
+                parsed_at=_now(),
             ))
             new += 1
 
-        exchange.last_parsed_at = datetime.now(timezone.utc)
+        exchange.last_parsed_at = _now()
         exchange.parse_errors_count = 0
         await session.commit()
     return new

@@ -75,7 +75,7 @@ class DbUserMiddleware(BaseMiddleware):
                     return
 
                 # Подписка истекла
-                now = datetime.now(timezone.utc)
+                now = datetime.utcnow()
                 if user.subscription_until and user.subscription_until < now:
                     if user.tier != "free" and not user.is_admin:
                         user.tier = "free"

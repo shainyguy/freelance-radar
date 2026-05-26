@@ -77,7 +77,7 @@ async def notifier_loop(bot):
         await asyncio.sleep(settings.PARSE_INTERVAL_SECONDS + 5)
         try:
             async with async_session() as session:
-                cutoff = datetime.now(timezone.utc) - timedelta(seconds=settings.PARSE_INTERVAL_SECONDS * 2)
+                cutoff = datetime.utcnow() - timedelta(seconds=settings.PARSE_INTERVAL_SECONDS * 2)
                 r = await session.execute(
                     select(Order).options(selectinload(Order.exchange))
                     .where(Order.parsed_at >= cutoff).order_by(Order.parsed_at.desc())
@@ -123,7 +123,7 @@ async def notifier_loop(bot):
 
                     delay = lim.get("delay_seconds", 0)
                     if delay > 0:
-                        now = datetime.now(timezone.utc)
+                        now = datetime.utcnow()
                         to_send = [o for o in to_send if o.parsed_at and (now - o.parsed_at).total_seconds() >= delay]
 
                     from bot.keyboards import order_card

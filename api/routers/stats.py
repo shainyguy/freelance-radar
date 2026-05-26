@@ -14,7 +14,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 
 @router.get("/overview")
 async def overview(days: int = Query(7, ge=1, le=90), session: AsyncSession = Depends(get_session)):
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = datetime.utcnow() - timedelta(days=days)
     cnt = (await session.execute(select(func.count(Order.id)).where(Order.parsed_at >= cutoff))).scalar() or 0
     avg = (await session.execute(
         select(func.avg(Order.budget_max)).where(Order.parsed_at >= cutoff, Order.budget_max.isnot(None))
@@ -42,7 +42,7 @@ async def overview(days: int = Query(7, ge=1, le=90), session: AsyncSession = De
 @router.get("/categories")
 async def categories_stats(days: int = Query(30, ge=1, le=90), session: AsyncSession = Depends(get_session)):
     """Статистика по категориям."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = datetime.utcnow() - timedelta(days=days)
     r = await session.execute(
         select(Order.category, func.count(Order.id), func.avg(Order.budget_max))
         .where(Order.parsed_at >= cutoff, Order.category.isnot(None))
@@ -59,7 +59,7 @@ async def categories_stats(days: int = Query(30, ge=1, le=90), session: AsyncSes
 @router.get("/heatmap")
 async def heatmap(days: int = Query(30, ge=7, le=90), session: AsyncSession = Depends(get_session)):
     """Тепловая карта: заказы по часам."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = datetime.utcnow() - timedelta(days=days)
     r = await session.execute(
         select(
             extract("hour", Order.parsed_at).label("hour"),
@@ -77,7 +77,7 @@ async def market_competitiveness(
     session: AsyncSession = Depends(get_session),
 ):
     """Конкурентоспособность рынка по категории."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = datetime.utcnow() - timedelta(days=days)
     q = select(
         func.avg(Order.responses_count),
         func.avg(Order.budget_max),

@@ -170,7 +170,7 @@ async def btn_sub(message: Message, user: User):
     sub = f"Тариф: **{user.tier.upper()}**\n"
     if user.subscription_until:
         from datetime import datetime, timezone
-        rem = (user.subscription_until - datetime.now(timezone.utc)).days
+        rem = (user.subscription_until - datetime.utcnow()).days
         sub += f"До: {user.subscription_until.strftime('%d.%m.%Y')} ({rem} дн.)\n"
     sub += f"AI: {user.ai_credits_left}  |  🔥 {user.streak_days}\n\n"
     sub += (
@@ -206,7 +206,7 @@ async def btn_analytics(message: Message, user: User, session):
     from sqlalchemy import func
     from core.models import Order, Notification, CRMEntry
     from datetime import datetime, timezone, timedelta
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     day_ago = now - timedelta(days=1)
     week_ago = now - timedelta(days=7)
 

@@ -70,7 +70,7 @@ def calc_competitiveness(
 
     # 2. Свежесть — чем свежее, тем лучше
     if posted_at:
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         age_hours = (now - posted_at).total_seconds() / 3600
         if age_hours <= 1: freshness = 100
         elif age_hours <= 3: freshness = 90
