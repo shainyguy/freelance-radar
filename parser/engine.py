@@ -1,10 +1,9 @@
 """
-Движок парсинга — сохранение, запуск, маппинг категорий.
-Активные биржи: Kwork, FL.ru, Freelance.ru
+Движок парсинга — 4 биржи: Kwork, FL.ru, Freelance.ru, Weblancer.
 """
 from __future__ import annotations
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from sqlalchemy import select
 from core.database import async_session
 from core.models import Exchange, Order
@@ -13,6 +12,7 @@ from parser.base import OrderDTO
 from parser.parsers.kwork import KworkParser
 from parser.parsers.flru import FLRuParser
 from parser.parsers.freelanceru import FreelanceRuParser
+from parser.parsers.weblancer import WeblancerParser
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +20,18 @@ PARSERS = {
     "kwork":      KworkParser,
     "fl":         FLRuParser,
     "freelanceru": FreelanceRuParser,
+    "weblancer":  WeblancerParser,
 }
 
 EXCHANGES_INIT = [
-    ("kwork",      "Kwork",          "https://kwork.ru",    "KworkParser"),
-    ("fl",         "FL.ru",          "https://www.fl.ru",   "FLRuParser"),
-    ("freelanceru","Freelance.ru",   "https://freelance.ru","FreelanceRuParser"),
+    ("kwork",      "Kwork",          "https://kwork.ru",         "KworkParser"),
+    ("fl",         "FL.ru",          "https://www.fl.ru",        "FLRuParser"),
+    ("freelanceru","Freelance.ru",   "https://freelance.ru",     "FreelanceRuParser"),
+    ("weblancer",  "Weblancer",      "https://www.weblancer.net","WeblancerParser"),
 ]
 
 
 def _now():
-    """Текущее время без tzinfo — совместимо и с SQLite, и с PostgreSQL."""
     return datetime.utcnow()
 
 
@@ -64,7 +65,6 @@ async def save_orders(exchange_name: str, dtos: list[OrderDTO]) -> int:
             full_text = f"{dto.title} {dto.text}".lower()
             is_urgent = any(w in full_text for w in ["срочно", "urgent", "asap", "сегодня"])
 
-            # Убираем tzinfo из posted_at если есть (для совместимости)
             posted = dto.posted_at
             if posted and posted.tzinfo is not None:
                 posted = posted.replace(tzinfo=None)

@@ -101,7 +101,7 @@ def skills_select(selected: list[str] | None = None, page: int = 0) -> IKM:
 # Биржи (для админки)
 # ══════════════════════════════════════════════════
 
-EXCHANGES = [("Kwork", "kwork"), ("FL.ru", "fl"), ("Freelance.ru", "freelanceru")]
+EXCHANGES = [("Kwork", "kwork"), ("FL.ru", "fl"), ("Freelance.ru", "freelanceru"), ("Weblancer", "weblancer")]
 
 
 # ══════════════════════════════════════════════════

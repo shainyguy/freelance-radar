@@ -105,7 +105,7 @@ async def btn_orders(message: Message, user: User, session):
     filters = list(r.scalars().all())
 
     r = await session.execute(
-        select(Order).options(selectinload(Order.exchange)).order_by(Order.parsed_at.desc()).limit(80)
+        select(Order).options(selectinload(Order.exchange)).order_by(Order.parsed_at.desc()).limit(200)
     )
     orders = list(r.scalars().all())
 
@@ -130,7 +130,7 @@ async def btn_orders(message: Message, user: User, session):
             await message.answer("📭 Нет новых подходящих заказов. Попробуйте расширить фильтры.")
         return
 
-    for o in matched[:5]:
+    for o in matched[:10]:
         bud = ""
         if o.budget_min and o.budget_max:
             bud = f"💰 {o.budget_min:,.0f} – {o.budget_max:,.0f} {o.currency}"
@@ -158,7 +158,7 @@ async def btn_orders(message: Message, user: User, session):
         await message.answer(txt, parse_mode="Markdown",
                               reply_markup=kb.order_card(o.id, o.url, user.ai_credits_left > 0))
 
-    if len(matched) > 5:
+    if len(matched) > 10:
         await message.answer(f"Показано 5 из {len(matched)}. Уточните фильтры.")
 
 
